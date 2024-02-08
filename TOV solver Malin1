@@ -1,0 +1,100 @@
+# imports etc.
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+
+# x axis: create r_prime array
+r_prime = np.linspace(0.0001, 10, num=100)
+#r0_prime = r_prime[0] #start value
+#R_prime = r_prime[-1] #end value ?is it really R or is it just r_end?
+r_prime_span = (r_prime[0], r_prime[-1])
+
+# parameters and constants
+yy = 1 #interaction strength
+p0_prime = 1 #initial pressure primed
+# p0_prime_values = np.linspace(0.0001, 0.01, 10)
+m0_prime = 0 #initial mass primed
+initial = (p0_prime, m0_prime) #initial conditions together
+m_p = 2.17643424*10**(-8) #planck mass in kg
+m_b = 1.433*10**(-25) #W-boson mass in kg
+rho0 = m_b**4
+n = 1 #number density
+n_prime = n/(m_b**3)*np.ones_like(r_prime) #number density primed
+
+
+# EOS
+#p_prime = yy**2*n_prime**2 ### since y=const and n_prime=const (apparently?), shouldn't p_prime be constant as well then?
+#p_prime = 1/3*(rho_prime-1) --> rho_prime = 3*p_prime+1 ; drhodr = 3*dpdr
+#rho_prime = p_prime+(p_prime)**(1/2)
+
+# condition: stop integrating when pressure drops to 0
+def condition(r_prime, y):
+  p_prime, m_prime = y
+  return p_prime
+condition.terminal = True #stop when condition is met
+condition.direction = -1 
+
+
+# relate dimensionful quantities to primed ones
+#p_prime = p/rho0 (not needed because we have dimensionless EOS -> maybe later for relating p back to p_prime)
+#rho_prime = rho/rho0 (same thing)
+#m_prime = m/(m_p**3/m_b**2)
+
+# functions
+#def massRadiusRelation (r_prime, rho_prime):
+ # rho_prime = n_prime+y**2*n_prime**2
+  #dmdr = 4*np.pi*r_prime**2*rho_prime
+  #return dmdr
+
+def TOV (r_prime, y):
+  p_prime, m_prime = y
+  if r_prime==0:
+    return 0
+  if m_prime==0:
+    return 0
+  
+  rho_prime = p_prime+(p_prime)**(1/2)
+  dpdr1 = -m_prime*rho_prime/(r_prime**2) * (1+p_prime/rho_prime)
+  dpdr2 = (1+4*np.pi*r_prime**3*p_prime/m_prime) * (1-2*m_prime/r_prime)**(-1)
+  dpdr =  dpdr1*dpdr2
+  dmdr = 4*np.pi*r_prime**2*rho_prime
+  #drhodr = 3*dpdr
+  return [dpdr, dmdr]
+            
+
+# solve TOV equation
+solution = solve_ivp(TOV, r_prime_span, initial, method='RK45', t_eval=r_prime, events=condition)
+r_prime_solved = solution.t
+p_prime_solved = solution.y[0]
+m_prime_solved = solution.y[1]
+
+# plot dimensionless results
+plt.plot(r_prime_solved, p_prime_solved, label='p_prime')
+plt.xlabel("r_prime")
+plt.ylabel("p_prime")
+plt.show()
+
+plt.plot(r_prime_solved, m_prime_solved, label='m_prime')
+plt.xlabel("r_prime")
+plt.ylabel("m_prime")
+plt.show()
+
+# convert back to dimensionful quantities
+#r = r_prime*m_p/m_b**2
+#r_solved = r_prime_solved*m_p/m_b**2
+#m = m_prime*m_p**3/m_b**2
+#m_solved = m_prime_solved*m_p**3/m_b**2
+#p = p_prime*rho0
+#p_solved = p_prime_solved*rho0
+#rho = rho_prime*rho0
+
+# plot dimensionFUL results
+#plt.plot(r_solved, p_prime_solved, label='p_prime')
+#plt.xlabel("r_prime")
+#plt.ylabel("p_prime")
+#plt.show()
+
+#plt.plot(r_prime_solved, m_prime_solved, label='m_prime')
+#plt.xlabel("r_prime")
+#plt.ylabel("m_prime")
+#plt.show()
