@@ -1,0 +1,87 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+
+def ODE(t, y):
+  r = t
+  m, p = y
+  rho = p+np.sqrt(float(p))
+
+  # no division by 0
+  if r==0:
+    return 0
+  #if m==0:
+   # m=1e-10
+  #if rho==0:
+    #return 0
+  
+  dmdr = 4*np.pi*r**2*rho
+  dpdr = -rho/(r**2) * (1+p/rho) * (m+4*np.pi*r**3*p) * (1-2*m/r)**(-1)
+  #drhodr = 3*dpdr
+
+  return [dmdr, dpdr]
+
+def surface_condition(r, y):
+  #m, p = y
+  surface_pressure = 0.0
+  return y[1]-surface_pressure
+surface_condition.terminal = True
+
+
+# r-axis
+r_span = np.array([0, 1000])
+
+# initial conditions
+y0 = [0, 1]
+
+# solution
+sol = solve_ivp(ODE, r_span, y0, events=surface_condition)
+#m, p = sol.y
+r_sol = sol.t
+m_sol = sol.y[0]
+p_sol = sol.y[1]
+rho_sol = p_sol+np.sqrt(p_sol)
+
+# plot PRIMED quantities
+#plt.plot(r_sol, m_sol, color='purple', label='mass')
+#plt.plot(r_sol, p_sol, color='blue', label='pressure')
+#plt.plot(r_sol, rho_sol, color= 'pink', label='energy density')
+#plt.show()
+
+
+
+# convert back to dimensionFUL quantities
+
+# constants 
+#yy = 1 #interaction strength
+m_p = 2.17643424*10**(-8) #planck mass in kg
+m_b = 1.433*10**(-25) #W-boson mass in kg
+rho0 = m_b**4
+
+r_solved = r_sol*m_p/m_b**2
+m_solved = m_sol*m_p**3/m_b**2
+p_solved = p_sol*rho0
+rho_solved = rho_sol*rho0
+
+# plot DIMENSIONFUL results
+#plt.plot(r_solved, m_solved, color='purple',  label='m_dimensionful')
+#plt.plot(r_solved, p_solved, color ='blue', label='p_dimensionful')
+#plt.plot(r_solved, rho_solved, color='pink', label='rho_dimensionful')
+#plt.xlabel("r_dimensionful")
+#plt.ylabel("dimensionful quantities")
+#plt.show()
+
+# plot everything
+fig, axs = plt.subplots(2, 2)
+axs[0, 0].plot(r_sol, m_sol, color='pink', label='mass')
+axs[0, 0].set_title('m_primed')
+axs[0, 1].plot(r_solved, m_solved, color='pink',  label='m_dimensionful')
+axs[0, 1].set_title('m')
+axs[1, 0].plot(r_sol, p_sol, color='blue', label='pressure')
+axs[1, 0].plot(r_sol, rho_sol, color='purple', label='energy density')
+axs[1, 0].set_title('p_primed and rho_primed')
+axs[1, 1].plot(r_solved, p_solved, color ='blue', label='p_dimensionful')
+axs[1, 1].plot(r_solved, rho_solved, color='purple', label='rho_dimensionful')
+axs[1, 1].set_title('p and rho')
+fig.tight_layout()
+plt.show()
