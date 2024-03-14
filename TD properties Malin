@@ -1,0 +1,119 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# constants, parameters
+m = 1  #.661*1e-27 #1Da in kg
+a = 1 / 10  #some value
+b = 1e-10  #some value
+G =  1#6.67e-11  #gravitational constant
+y = 10  #interaction strength
+e = 2.718
+k = 1.38*1e-23  #Boltzmann constant
+g = 5/3  #adiabatic factor
+
+
+# x-axis
+T = np.logspace(-8, 0, num=2000)
+n = np.logspace(-8, 0, num=2000)
+
+
+# mass density
+def rho(T1):
+  return 144 / 1024 * G * np.pi * m**6 / a**3 / T * e**(2 * b / T)
+
+# number density
+def num(T):
+  return 144 / 1024 * G * np.pi * m**5 / a**3 / T * e**(2 * b / T)
+
+
+# sound speed (interacting)
+def cS(n):
+  #n = num(T)
+  return np.sqrt(2*y*n/(m+2*y*n))
+
+# sound speed (ideal gas)
+def cS_ideal(T):
+  return np.sqrt(g*T/m)
+
+
+# jeans mass (interacting)
+def mJ(cS):
+  #n = num(T)
+  #cS = cS(n)
+  #rho_val = rho(T)
+  return np.pi / 6 * cS**3 * np.sqrt(np.pi / G)**3 * 1 / np.sqrt(n)
+
+# jeans mass (ideal gas)
+def mJ_ideal(T):
+  #cS = cS_ideal(T)
+  return np.pi / 6 * (np.sqrt(T))**3 * np.sqrt(np.pi / G)**3 * 1 / np.sqrt(n)
+
+
+# contour plot
+T_grid = np.linspace(1e-4, 1e2, num=2000)
+n_grid = np.linspace(1e-8, 1e-6, num=2000)
+T_plot, numden_plot = np.meshgrid(T_grid, n_grid)
+
+def mJ_plot(Temp, numden):
+  return np.pi / 6 * cS_ideal(Temp)**3 * np.sqrt(np.pi/G)**3 * np.sqrt(1/(m*numden))
+
+MJ = mJ_plot(T_plot, numden_plot)
+#plt.contour(MJ) #levels=np.linspace(0, 100000, num=200))
+#plt.ylim(0, 100)
+#plt.show()
+
+# here, I tried a different approach to the contour plot: I looked at the formula for mJ (ideal gas) and found that the number density must be a multiple (hence the number m) of the temperature (x) cubed.
+def contour(x, m):
+  return m*x**3
+                                                   
+# side by side plot
+
+# interacting gas at T=0
+fig, axs = plt.subplots(3, 2)
+fig.suptitle('interacting gas            ideal gas')
+
+axs[0, 0].plot(T, num(T), color='red')
+axs[0, 0].set_xscale("log")
+axs[0, 0].set_yscale("log")
+axs[0, 0].set_title("n(T')")
+
+axs[1, 0].plot(n, cS(n), color='darkblue')
+axs[1, 0].set_xscale("log")
+axs[1, 0].set_yscale("log")
+axs[1, 0].set_title("cS(n)")
+
+axs[2, 0].plot(n, mJ(cS(n)), color='green', )
+axs[2, 0].set_xscale("log")
+axs[2, 0].set_yscale("log")
+axs[2, 0].set_title("mJ(n)")
+
+
+# ideal gas at set T
+axs[0, 1].plot(T, num(T), color='orange')
+# contour plot 
+#axs[0, 1].contour(MJ)#, levels=np.logspace(1, 10, num=10))
+# contour plot with different method, values for m chosen randomly
+#axs[0, 1].plot(T, contour(T, 1), color='grey')
+#axs[0, 1].plot(T, contour(T, 2), color='black')
+#axs[0, 1].plot(T, contour(T, 10), color='grey')
+#axs[0, 1].plot(T, contour(T, 100), color='black')
+#axs[0, 1].plot(T, contour(T, 100000), color='grey')
+#axs[0, 1].plot(T, contour(T, 0.002), color='black')
+axs[0, 1].set_xscale("log")
+axs[0, 1].set_yscale("log")
+axs[0, 1].set_title("n(T')")
+
+axs[1, 1].plot(T, cS_ideal(T), color='lightblue')
+axs[1, 1].set_xscale("log")
+axs[1, 1].set_yscale("log")
+axs[1, 1].set_title('cS(T)')
+
+axs[2, 1].plot(n, mJ(cS_ideal(1)), color='lightgreen')
+axs[2, 1].set_xscale("log")
+axs[2, 1].set_yscale("log")
+axs[2, 1].set_title('mJ(n)')
+
+print(MJ)
+
+fig.tight_layout()
+plt.show()
